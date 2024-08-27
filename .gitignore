@@ -1,1 +1,5 @@
+# Don't include installed Nix dependencies
 .direnv/
+
+# Don't include any generated files
+*.pdf

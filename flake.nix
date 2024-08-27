@@ -11,7 +11,12 @@
     in
     {
       devShells = eachSystem (pkgs: {
-        default = pkgs.mkShell { buildInputs = [ pkgs.pandoc ]; };
+        default = pkgs.mkShell {
+          buildInputs = [
+            pkgs.pandoc
+            pkgs.texliveTeTeX # There's probably a more pared down solution.
+          ];
+        };
       });
     };
 }

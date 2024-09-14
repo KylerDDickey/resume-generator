@@ -13,8 +13,13 @@
       devShells = eachSystem (pkgs: {
         default = pkgs.mkShell {
           buildInputs = [
+            pkgs.gnumake
             pkgs.pandoc
-            pkgs.texliveTeTeX # There's probably a more pared down solution.
+            pkgs.pyright
+            (pkgs.python312.withPackages (pypkgs: [
+              pypkgs.jinja2
+              pypkgs.weasyprint
+            ]))
           ];
         };
       });

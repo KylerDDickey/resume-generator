@@ -5,7 +5,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from queue import Full, Queue
 from subprocess import DEVNULL, STDOUT, Popen
 from threading import Event, Lock, Thread
-from typing import Callable, List, Protocol, Set, TypeVar
+from typing import Callable, Protocol, Set, TypeVar
 from tomllib import load as load_toml
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
@@ -405,7 +405,7 @@ class DevWebSocketServerDaemon(Daemon):
 
 
 @dataclass
-class Options:
+class DaemonOptions:
     build_process_request_queue_options: BuildProcessRequestQueueOptions
     project_dir_observer_daemon_options: ProjectDirObserverDaemonOptions
     dev_http_server_daemon_options: DevHTTPServerDaemonOptions
@@ -423,22 +423,11 @@ class ProcessConfig:
     stderr: int
 
 
+@dataclass
 class Config:
-
-    def __init__(self, options: Options, process_config: ProcessConfig,
-                 web_socket_broadcast_messages: WebSocketBroadcastMessages):
-        self._options = options
-        self._process_config = process_config
-        self._web_socket_broadcast_messages = web_socket_broadcast_messages
-
-    def options(self) -> Options:
-        return self._options
-
-    def process_config(self) -> ProcessConfig:
-        return self._process_config
-
-    def web_socket_broadcast_messages(self) -> WebSocketBroadcastMessages:
-        return self._web_socket_broadcast_messages
+    daemon_options: DaemonOptions
+    process_config: ProcessConfig
+    web_socket_broadcast_messages: WebSocketBroadcastMessages
 
 
 def read_config(optional_file_name: str | None) -> Config:
@@ -460,7 +449,7 @@ def read_config(optional_file_name: str | None) -> Config:
     raw_project_dir_observer_options = coalesce(d.get('project_dir_observer'),
                                                 {})
     raw_local_web_server = coalesce(d.get('local_web_server'), {})
-    options = Options(
+    daemon_options = DaemonOptions(
         BuildProcessRequestQueueOptions(
             coalesce(
                 raw_build_process_request_queue_options.get('max_queue_size'),
@@ -501,13 +490,14 @@ def read_config(optional_file_name: str | None) -> Config:
         coalesce(raw_web_socket_broadcast_messages.get('on_process_success'),
                  'reload'))
 
-    return Config(options, process_config, web_socket_broadcast_messages)
+    return Config(daemon_options, process_config,
+                  web_socket_broadcast_messages)
 
 
 def get_daemons(data_source: str, config: Config) -> Daemon:
-    options = config.options()
-    process_config = config.process_config()
-    web_socket_broadcast_messages = config.web_socket_broadcast_messages()
+    daemon_options = config.daemon_options
+    process_config = config.process_config
+    web_socket_broadcast_messages = config.web_socket_broadcast_messages
 
     trimmed_data_source = data_source.strip()
 
@@ -520,7 +510,8 @@ def get_daemons(data_source: str, config: Config) -> Daemon:
 
     make_process_factory = MakeProcessFactory()
     build_process_request_queue = BuildProcessRequestQueue(
-        make_process_factory, options.build_process_request_queue_options)
+        make_process_factory,
+        daemon_options.build_process_request_queue_options)
 
     class RebuildEventHandler(FileSystemEventHandler):
 
@@ -534,7 +525,8 @@ def get_daemons(data_source: str, config: Config) -> Daemon:
     rebuild_event_handler = RebuildEventHandler()
 
     project_dir_observer_daemon = ProjectDirObserverDaemon(
-        rebuild_event_handler, options.project_dir_observer_daemon_options)
+        rebuild_event_handler,
+        daemon_options.project_dir_observer_daemon_options)
 
     web_socket_message_publisher = WebSocketMessagePublisher()
 
@@ -546,11 +538,11 @@ def get_daemons(data_source: str, config: Config) -> Daemon:
         build_process_request_queue_reader)
 
     dev_http_server_daemon = DevHTTPServerDaemon(
-        options.dev_http_server_daemon_options)
+        daemon_options.dev_http_server_daemon_options)
 
     dev_web_socket_server_daemon = DevWebSocketServerDaemon(
         web_socket_message_publisher,
-        options.dev_web_socket_server_daemon_options)
+        daemon_options.dev_web_socket_server_daemon_options)
 
     return Legion(project_dir_observer_daemon,
                   build_process_request_queue_reader_daemon,
@@ -600,6 +592,8 @@ def get_arg_parser() -> ArgumentParser:
                         help=data_file_help)
 
     config_file_help = '''
+    The options that adjust the options for the daemons and the
+    process and inter-thread communication components.
     '''
     parser.add_argument('-c',
                         '--config',

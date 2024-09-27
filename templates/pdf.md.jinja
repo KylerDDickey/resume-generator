@@ -1,45 +1,56 @@
-# {{ profile.name }}
-
-{{ profile.phone_number }} | <{{ profile.email }}>
-
+<div class="heading">
+<h1 class="name">{{ profile.name.upper() }}</h1>
+<p class="info">{{ profile.phone_number }} | <{{ profile.email }}></p>
+</div>
 
 ## WORK EXPERIENCE
 {% for we in work_experience %}
+<div class="official-info">
+<div class="official-info-left">
 ### {{ we.title }}
 
 **{{ we.company_name }}**
+</div>
 
+<div class="official-info-right">
 *{{ we.location }}*
 
-{{ we.start_date }} - {{ we.end_date }}
-{% for c in we.contributions %}
-- {{ c }}{% endfor %}
+{{ we.start_date }} - {{ we.end_date.capitalize() }}
+</div>
+</div>
+{% for i in range(3) %}
+- {{ we.contributions[i] }}{% endfor %}
 {% endfor %}
 
 ## EDUCATION
 {% for e in education %}
+<div class="official-info">
+<div class="official-info-left">
 ### {{ e.degree.program }} in {{ e.degree.major }}
 
 {% if e.degree.minor %}*Minor in {{ e.degree.minor }}*{% endif %}
 {% if e.degree.emphasis %}*Emphasis in {{ e.degree.emphasis }}*{% endif %}
+</div>
 
+<div class="official-info-right">
 **{{ e.institution }}** - *{{ e.location }}*
 
 {{ e.start_date }} - {{ e.end_date }}
+</div>
+</div>
 
-{% if e.notable_coursework %}**Notable Coursework**: {% for ncw in e.notable_coursework %}{{ ncw }}{% if not loop.last %}, {% endif %}{% endfor %}
+{% if e.notable_coursework %}**Notable Coursework**: {{ ', '.join(e.notable_coursework) }}
 {% endif %}
 {% if e.involvement %}{% for i in e.involvement %}{{ i.organization }}: {% for l in i.levels %}{{ l.title }} from {{ l.start_date }} to {{ l.end_date }}{% if not loop.last %}, {% endif %}{% endfor %}
 {% endfor %}{% endif %}
-GPA: {{ e.gpa }}
 {% endfor %}
 
 ## TECHNICAL KNOWLEDGE
 {% for tk in technical_knowledge %}
 ### {{ tk.category }}
 
-{% for p in tk.proficiencies %}- {{ p }}
-{% endfor %}{% endfor %}
+{{ ', '.join(tk.proficiencies) }}
+{% endfor %}
 
 ## PROJECTS
 {% for p in projects %}

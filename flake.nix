@@ -18,7 +18,9 @@
             pkgs.pyright
             (pkgs.python312.withPackages (pypkgs: [
               pypkgs.jinja2
+              pypkgs.watchdog
               pypkgs.weasyprint
+              pypkgs.websockets
             ]))
           ];
         };

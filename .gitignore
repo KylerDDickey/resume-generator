@@ -167,3 +167,9 @@ cython_debug/
 # Don't include generated files
 tmp/
 out/
+
+# Don't include resume data
+data/
+
+# Don't include generated files in the static dev server directory
+static/doc/
